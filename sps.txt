@@ -1,0 +1,885 @@
+
+
+// H.264
+/*
+NAL Unit Type Content of NAL Unit NRI (binary)
+----------------------------------------------------------------
+1 non-IDR coded slice 10
+2 Coded slice data partition A 10
+3 Coded slice data partition B 01
+4 Coded slice data partition C 01
+5 IDR                          11
+*/
+
+#define NAL_SLICE		1
+#define NAL_DPA			2
+#define NAL_DPB			3
+#define NAL_DPC			4
+#define NAL_IDR_SLICE		5
+#define NAL_SEI			6
+#define NAL_SPS			7
+#define NAL_PPS			8
+#define NAL_PICTURE_DELIMITER	9
+#define NAL_FILTER_DATA		10
+
+#define    SLICE_TYPE_P    0 
+#define    SLICE_TYPE_B    1 
+#define    SLICE_TYPE_I    2 
+#define    SLICE_TYPE_SP   3 
+#define    SLICE_TYPE_SI   4
+
+
+#define BSWAP(a) { \
+    unsigned int _temp0,_temp1,_temp2,_temp3,_temp4;\
+    _temp1=(a & 0xFF00FF00)>>8;\
+    _temp0=(a & 0x00FF00FF)<<8;\
+    _temp2=_temp0+_temp1;\
+    _temp3=(_temp2 & 0x0000FFFF)<<16;\
+    _temp4=(_temp2 & 0xFFFF0000)>>16;\
+    a=_temp3+_temp4;\
+                }
+
+#define NALU_GET_F(a) (((a)>>7)&1)
+#define NALU_GET_NRI(a) (((a)>>5)&3)
+#define NALU_GET_TYPE(a) (((a)>>0)&31)
+
+#define NALU_RESET(a)  (a)=0
+#define NALU_SET_F(a,f) (a) |= (((f)&1) << 7)
+#define NALU_SET_NRI(a,nri) (a) |= (((nri)&3) << 5)
+#define NALU_SET_TYPE(a,type) (a) |= (((type)&31) << 0)
+
+#define FU_RESET(a)  (a)=0
+#define FU_SET_F(a,f) (a) |= (((f)&1) << 7)
+#define FU_SET_NRI(a,nri) (a) |= (((nri)&3) << 5)
+#define FU_SET_TYPE(a,type) (a) |= (((type)&31) << 0)
+
+#define FU_GET_F(f)  (((f) >> 7)&1)
+#define FU_GET_NRI(nri)  (((nri) >> 5)&3)
+#define FU_GET_TYPE(type)  (((type) >> 0)&31)
+
+
+#define NALU2FU(to,from)  (to) = (from)
+
+#define FUHEADER_RESET(a) (a)=0
+#define FUHEADER_SET_TYPE(a,type) (a) |= (((type)&31) << 0)
+#define FUHEADER_SET_R(a,r) (a) |= (((r)&1) << 5)
+#define FUHEADER_SET_E(a,e) (a) |= (((e)&1) << 6)
+#define FUHEADER_SET_S(a,s) (a) |= (((s)&1) << 7)
+
+#define FUHEADER_GET_TYPE(a) (((a) >> 0)&31)
+#define FUHEADER_GET_R(a)   (((a) >> 5)&1) 
+#define FUHEADER_GET_E(a)  (((a) >> 6)&1) 
+#define FUHEADER_GET_S(a)  (((a) >> 7)&1) 
+
+
+
+// H.264
+
+#define PAYLAODTYPE_H264                    96
+
+#define STAP_A_H264                           (24) // ��ʱ���� NALU+[2bytesSize + nalhdr + data]xN
+#define STAP_B_H264                           (25)
+#define MTAP16_H264                           (26)//���ʱ�����ϰ�
+#define MTAP24_H264                           (27)//���ʱ�����ϰ�
+#define FU_TYPE_H264                          (28)
+#define FU_B_TYPE_H264                        (29)
+
+#define NAL_SLICE		1
+#define NAL_DPA			2
+#define NAL_DPB			3
+#define NAL_DPC			4
+#define NAL_IDR_SLICE		5
+#define NAL_SEI			6
+#define NAL_SPS			7
+#define NAL_PPS			8
+#define NAL_PICTURE_DELIMITER	9
+#define NAL_FILTER_DATA		10
+
+#define    SLICE_TYPE_P    0 
+#define    SLICE_TYPE_B    1 
+#define    SLICE_TYPE_I    2 
+#define    SLICE_TYPE_SP   3 
+#define    SLICE_TYPE_SI   4
+
+// H.265 (HEVC)
+#define PAYLAODTYPE_H265                    98
+
+
+#define    HEVC_SLICE_TYPE_B    0 
+#define    HEVC_SLICE_TYPE_P    1 
+#define    HEVC_SLICE_TYPE_I    2 
+
+
+#define HEVC_NAL_SLICE_TRAIL_N  0
+#define HEVC_NAL_SLICE_TRAIL_R  1
+#define HEVC_NAL_SLICE_TSR_N    2
+#define HEVC_NAL_SLICE_TSA_R    3
+#define HEVC_NAL_SLICE_STSA_N   4
+#define HEVC_NAL_SLICE_STSA_R   5
+#define HEVC_NAL_SLICE_RADL_N   6
+#define HEVC_NAL_SLICE_RADL_R   7
+#define HEVC_NAL_SLICE_RASL_N   8
+#define HEVC_NAL_SLICE_RASL_R   9
+
+// 16-20 �൱��һ���µ�����û�вο�֡
+#define HEVC_NAL_SLICE_BLA_W_LP      16
+#define HEVC_NAL_SLICE_BLA_W_RADL    17
+#define HEVC_NAL_SLICE_BLA_N_LP      18
+#define HEVC_NAL_SLICE_IDR_W_RADL    19
+#define HEVC_NAL_SLICE_IDR_N_LP       20
+#define HEVC_NAL_SLICE_CRA_NUT        21
+
+#define HEVC_NAL_SLICE_RSV_IRAP_VCL22      22
+#define HEVC_NAL_SLICE_RSV_IRAP_VCL23      23
+
+#define HEVC_NAL_VPS            32
+#define HEVC_NAL_SPS            33
+#define HEVC_NAL_PPS            34
+#define HEVC_PICTURE_DELIMITER	35
+#define HEVC_NAL_EOS            36
+#define HEVC_NAL_EOB            37
+#define HEVC_NAL_FILTER_DATA    38
+#define HEVC_NAL_SEI            39
+#define HEVC_NAL_SEI_SUFFIX     40
+
+
+
+#define HEVC_AP_TYPE                          (48)
+#define HEVC_FU_TYPE                          (49)
+#define HEVC_PACI_TYPE                        (50)
+
+
+#define HEVC_NALU_GET_F(a) (((a)>>7)&1)
+#define HEVC_NALU_GET_TYPE(a) (((a)>>1)&63)
+#define HEVC_NALU_GET_LAYERID(a,b) ((((a)&1)<<5) | (((b) >> 3 ) & 31))
+#define HEVC_NALU_GET_TID(b) (((b)>>0)&7)
+
+#define HEVC_NALU_RESET(a,b)  (a)=0,(b)=0
+#define HEVC_NALU_SET_F(a,f) (a) |= (((f)&1) << 7)
+#define HEVC_NALU_SET_TYPE(a,type) (a) |= (((type)&63) << 1)
+#define HEVC_NALU_SET_LAYERID(a,b,LID) (a) |= ((((LID)>> 5)&1) << 0),(b)|=(((LID) & 31)<<3)
+#define HEVC_NALU_SET_TID(b,TID) (b)|=(((TID) & 7)<<0)
+
+
+
+
+#define HEVC_FU_RESET(c)  (c)=0
+#define HEVC_FU_SET_S(c,s) (c)|=(((s) & 1) << 7)
+#define HEVC_FU_SET_E(c,e) (c)|=(((e) & 1) << 6)
+#define HEVC_FU_SET_TYPE(c,type) (c)|=(((type) & 63) << 0)
+
+#define HEVC_FU_GET_S(c) (((c)>>7) & 1)
+#define HEVC_FU_GET_E(c) (((c) >> 6) & 1)
+#define HEVC_FU_GET_TYPE(c) ((c) & 63)
+
+typedef struct {
+    //byte 0
+    unsigned char TYPE:5;
+    unsigned char NRI:2;
+    unsigned char F:1;    
+
+} NALU_HEADER; /**//* 1 BYTES */
+
+
+static void scaling_list(Bitstream *bs,int sizeOfScalingList)
+{
+                    int lastScale = 8;
+                    int nextScale = 8;
+                    int j,delta_scale;
+                    int useDefaultScalingMatrixFlag,scalingList;
+                    for( j = 0; j < sizeOfScalingList; j++ ) 
+                      {
+                        if( nextScale != 0 ) 
+                        {
+                        delta_scale = eg_read_se(bs);
+                        nextScale = ( lastScale + delta_scale + 256 ) &0xFF;
+                        useDefaultScalingMatrixFlag = ( j == 0 && nextScale == 0 );
+                         if(useDefaultScalingMatrixFlag)
+                             break;
+                        }
+                        scalingList = ( nextScale == 0 ) ? lastScale : nextScale;
+                        lastScale = scalingList;
+                  }
+ }
+int CH264RtpSession::ReadSPS(void *pData,int Size,int bNeedCheck)
+{
+    int i;//,list;
+    int x,y;
+    Bitstream tmpBs,*bs=&tmpBs;
+    int mb_num,mb_big_num,mb_count;
+    int profile_idc,level_idc,sps_id;
+    int chroma_format_idc,residual_color_transform_flag;
+    int bit_depth_luma,bit_depth_chroma,transform_bypass;
+    int seq_scaling_matrix_present_flag,seq_scaling_list_present_flag;
+    int log2_max_frame_num,gaps_in_frame_num_allowed_flag;
+    int poc_type,log2_max_poc_lsb,ref_frame_count;
+    int i_mb_width,i_mb_height;
+    int bcrop,crop_left,crop_right,crop_top,crop_bottom;
+    int nWidth,nHeight,direct_8x8_inference_flag;
+    if (bNeedCheck)
+    { // ����SPSͷ
+        unsigned char *pCurr,*pEnd,c;
+        int nZero = 0,bFound = 0;
+        pCurr = (unsigned char *)pData;
+        pEnd = pCurr + Size;
+        do 
+        {
+            if (pCurr == pEnd)
+            {
+                break;
+            }
+            c = pCurr[0];
+            if (c == 0)
+            {
+                nZero++;
+            }
+            else if (c == 0x01)
+            {
+                if (nZero >= 2)
+                {
+                    // get
+                    if (pCurr + 1 == pEnd)
+                    {
+                        break;
+                    }
+                    if (m_VideoCodecId == AntsSVAC)
+                    {
+                        if (SVAC_NALU_GET_TYPE(pCurr[1]) == 0x07)
+                        {
+                            // sps
+                            bFound = 1;
+                            break;
+                        }
+                        else if (SVAC_NALU_GET_TYPE(pCurr[1]) == 0x01 ||
+                            SVAC_NALU_GET_TYPE(pCurr[1]) == 0x05 )
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (NALU_GET_TYPE(pCurr[1]) == 0x07)
+                        {
+                            // sps
+                            bFound = 1;
+                            break;
+                        }
+                        else if (NALU_GET_TYPE(pCurr[1]) == 0x01 ||
+                            NALU_GET_TYPE(pCurr[1]) == 0x05 )
+                        {
+                            break;
+                        }
+                    }
+                    
+                }
+                nZero = 0;
+            }
+            else
+            {
+                nZero = 0;
+            }
+            pCurr++;
+        } while (1);
+        if (bFound)
+        {
+            Size = pEnd - pCurr - 2;
+            pData = pCurr + 2;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    BitstreamInit(bs,pData,Size);
+    if (m_VideoCodecId == AntsSVAC)
+    {
+        profile_idc =eg_read_direct(bs,8);
+        level_idc=eg_read_direct(bs,8);
+        sps_id=eg_read_ue(bs);
+        
+         chroma_format_idc = eg_read_direct(bs,2);
+         bit_depth_luma = eg_read_ue(bs)+8;
+         bit_depth_chroma = eg_read_ue(bs)+8;
+         i_mb_width=eg_read_ue(bs)+1;
+         i_mb_height=eg_read_ue(bs)+1;
+
+         crop_left = 0;
+         crop_right = 0;
+         crop_top = 0;
+         crop_bottom = 0;
+    }
+    else
+    {
+
+    
+   /*
+   *Baseline profile -> 66
+   *Main profile     -> 77
+   *Extended profile -> 88
+   *High profile     -> 100
+   *High 10 profile  -> 110
+   *High 4:2:2 profile-> 122
+   *High 4:4:4 profile-> 144
+   *High 4:4:4 Predictive profile ->244
+   *CAVLC 4:4:4 Intra profile ->44
+   */
+    profile_idc =eg_read_direct(bs,8);
+   
+    READ_MARKER();
+    READ_MARKER();
+    READ_MARKER();
+    eg_read_direct(bs,5);//reserved
+    level_idc=eg_read_direct(bs,8);
+    
+    sps_id=eg_read_ue(bs);
+    if (sps_id >= 32)
+    {
+        return -1;
+    }
+    if(profile_idc == 100 || profile_idc == 110 ||
+        profile_idc == 122 || profile_idc == 244 ||
+        profile_idc == 44 || profile_idc == 83 ||
+        profile_idc == 86 || profile_idc == 118 ||
+        profile_idc == 128)
+    {//high profile
+        chroma_format_idc = eg_read_ue(bs);
+        if (chroma_format_idc > 3)
+        {
+            return -1;
+        }
+        residual_color_transform_flag = 0;
+        if(chroma_format_idc == 3)
+        {
+            residual_color_transform_flag = eg_read_direct1(bs);
+        }
+        m_nresidual_color_transform_flag = residual_color_transform_flag;
+        bit_depth_luma = eg_read_ue(bs)+8;
+        bit_depth_chroma = eg_read_ue(bs)+8;
+        if (bit_depth_luma > 14 || bit_depth_chroma > 14)
+        {
+            return -1;
+        }
+        transform_bypass = eg_read_direct1(bs);
+        seq_scaling_matrix_present_flag = eg_read_direct1(bs);
+        if (seq_scaling_matrix_present_flag)
+        {
+            for (i = 0; i < 8 + 4; i++)
+            {
+                if (i < 8 || (i > 7 &&chroma_format_idc == 3))
+                seq_scaling_list_present_flag = eg_read_direct1(bs);
+                if (seq_scaling_list_present_flag)
+                {
+
+                    if (i < 6)
+                    {
+                        scaling_list(bs,16);
+                    }
+                    else if(i < 8)
+                    {
+                        scaling_list(bs,64);
+                    }
+                    else if (chroma_format_idc == 3)
+                    {
+                        scaling_list(bs,64);
+                    }
+                }
+            }
+        }
+
+    }
+    else
+    {
+        chroma_format_idc = 1;
+        bit_depth_luma = 8;
+        bit_depth_chroma = 8;
+    }
+  
+
+    log2_max_frame_num=eg_read_ue(bs)+4;
+    if (log2_max_frame_num < 4 || log2_max_frame_num > 16)
+    {
+        return -1;
+    }
+    m_nlog2_max_frame_num = log2_max_frame_num;
+    poc_type=eg_read_ue(bs);
+    if(poc_type == 0)
+    {
+        log2_max_poc_lsb=eg_read_ue(bs)+4;
+        if (log2_max_poc_lsb > 12 + 4)
+        {
+            return -1;
+        }
+    }
+    else if(poc_type == 1)
+    {
+        //
+        int delta_pic_order_always_zero_flag,offset_for_non_ref_pic,
+            offset_for_top_to_bottom_field,poc_cycle_length,
+            offset_for_ref_frame_256_i;
+        delta_pic_order_always_zero_flag = eg_read_direct1(bs);
+        offset_for_non_ref_pic = eg_read_se(bs);
+        offset_for_top_to_bottom_field = eg_read_se(bs);
+        poc_cycle_length = eg_read_ue(bs);
+        if (poc_cycle_length >= 256)
+        {// overflow
+            return -1;
+        }
+        for (i = 0; i < poc_cycle_length; i++)
+        {
+            offset_for_ref_frame_256_i = eg_read_se(bs);
+        }
+
+    }
+    else if(poc_type != 2)
+    {
+        //error;
+        return -1;
+    }
+
+    ref_frame_count=eg_read_ue(bs);
+    if (ref_frame_count > 32 -2 || ref_frame_count > 16)
+    {
+        return -1;
+    }
+
+    gaps_in_frame_num_allowed_flag=eg_read_direct1(bs);
+    //h->sps.mb_width
+    i_mb_width=eg_read_ue(bs)+1;
+    //h->sps.mb_height
+    i_mb_height=eg_read_ue(bs)+1;
+    m_nframe_mbs_only_flag = eg_read_direct1(bs);
+    if (!m_nframe_mbs_only_flag)
+    {
+          int  mb_aff=eg_read_direct1(bs);
+    }
+    direct_8x8_inference_flag=eg_read_direct1(bs);
+    bcrop = eg_read_direct1(bs);
+    if(bcrop)
+    {
+        crop_left = eg_read_ue(bs);
+        crop_right = eg_read_ue(bs);
+        crop_top = eg_read_ue(bs);
+        crop_bottom = eg_read_ue(bs);
+
+    }
+    else
+    {
+        crop_left = 0;
+        crop_right = 0;
+        crop_top = 0;
+        crop_bottom = 0;
+    }
+}
+#define MIN(x,y) ((x) > (y)?(y):(x))
+    nWidth = (i_mb_width << 4) - 2*MIN(crop_right,7);
+    if(m_nframe_mbs_only_flag)
+    nHeight = (i_mb_height << 4) - 2 * MIN(crop_bottom,7);
+    else
+        nHeight = (i_mb_height << 4) - 4 * MIN(crop_bottom,3);
+
+    
+
+    if (nWidth < 0)
+    {
+        nWidth = 0;
+    }
+    if (nHeight < 0)
+    {
+        nHeight = 0;
+    }
+    //printf("%d  %d \n",i_mb_width << 4 ,i_mb_height << 4);
+
+    if (m_pRtpSessionClientFxn != NULL)
+    {
+        if (m_nWidth != nWidth ||
+            m_nHeight != nHeight)
+        {
+            AntsFileHeader fh;
+            memset(&fh,0,sizeof(fh));
+            fh.uiFileStartId = ANTS_FILE_STARTCODE;
+            fh.uiFrameRate = 0;
+            fh.uiStreamType = 3;
+            //printf("%d x %d -> %d x %d\n",m_nWidth,m_nHeight,nWidth,nHeight);
+            m_pRtpSessionClientFxn(m_pRtpSessionClientHandle,ANTS_RTSP_CALLBACKBYPE_STREAM,ANTS_RTSP_CALLBACKBYPE_STREAM_H264,0,AntsPktSysHeader,&fh,sizeof(fh),m_pRtpSessionClientUser);
+        }
+        
+    }
+    m_nWidth = nWidth;
+    m_nHeight = nHeight;
+    m_nProfile_idc = profile_idc;
+    m_nLevel_idc = level_idc;
+
+   
+
+    return 0;
+}
+
+int CH264RtpSession::H265_profile_tier_level(void *pbs,int profilePresentFlag,int maxNumSubLayersMinus1)
+{
+    Bitstream *bs = (Bitstream *)pbs;
+    int i;
+    int general_profile_idc;
+    int general_profile_compatibility_flag[32];
+    int general_level_idc;
+    if(profilePresentFlag)
+    {
+        eg_read_direct(bs,2);//general_profile_space
+        eg_read_direct(bs,1);//general_tier_flag
+        general_profile_idc = eg_read_direct(bs,5);//general_profile_idc
+        for (i = 0; i < 32; i++)
+        {
+            general_profile_compatibility_flag[i] = eg_read_direct(bs,1);
+        }
+        eg_read_direct(bs,1);//general_progressive_source_flag
+        eg_read_direct(bs,1);//general_interlaced_source_flag
+        eg_read_direct(bs,1);//general_non_packed_constraint_flag
+        eg_read_direct(bs,1);//general_frame_only_constraint_flag
+        if( general_profile_idc == 4 ||
+            general_profile_compatibility_flag[4] ||
+            general_profile_idc == 5 || 
+            general_profile_compatibility_flag[5] || 
+            general_profile_idc == 6 || 
+            general_profile_compatibility_flag[6] || 
+            general_profile_idc == 7 || 
+            general_profile_compatibility_flag[7]) 
+        {
+            eg_read_direct(bs,9);
+             eg_read_direct(bs,16);// 34
+              eg_read_direct(bs,18);
+        }
+        else
+        {
+            eg_read_direct(bs,16);// 43
+            eg_read_direct(bs,16);
+            eg_read_direct(bs,11);
+            if( ( general_profile_idc >= 1 && general_profile_idc <= 5 ) || 
+                general_profile_compatibility_flag[ 1 ] || 
+                general_profile_compatibility_flag[ 2 ] || 
+                general_profile_compatibility_flag[ 3 ] || 
+                general_profile_compatibility_flag[ 4 ] || 
+                general_profile_compatibility_flag[ 5 ] )
+            {
+                 eg_read_direct(bs,1); // general_inbld_flag
+            }
+            else
+            {
+                eg_read_direct(bs,1); 
+            }
+        }
+    }
+
+    general_level_idc = eg_read_direct(bs,8);
+    return 0;
+
+}
+
+int CH264RtpSession::decodeNal(void *pData,int Size,void **pOut)
+{
+    char *pOutBuf = new char[Size];
+    int nOutSize = 0,i;
+    uint8_t *pIn = (uint8_t *)pData,a,b;
+    int nZeroCnt = 0;
+  
+    for (i = 0;i<Size;i++)
+    {
+        if (pIn[i] == 0)
+        {
+            nZeroCnt++;
+        }
+        else if (pIn[i] == 0x03 && nZeroCnt == 2)
+        {
+            nZeroCnt = 0;
+            continue;
+        }
+        else
+        {
+            nZeroCnt = 0;
+        }
+        pOutBuf[nOutSize] = pIn[i];
+        nOutSize++;
+       
+        
+    }
+    if (nOutSize == 0)
+    {
+        if (pOut)
+        {
+            *pOut = NULL;
+            delete pOutBuf;
+        }
+        return 0;
+    }
+    if (pOut)
+    {
+        *pOut = pOutBuf;
+    }
+    return nOutSize;
+}
+
+
+int CH264RtpSession::H265_ReadSPS(void *pData,int Size)
+{
+    int i;//,list;
+    int x,y;
+    Bitstream tmpBs,*bs=&tmpBs;
+    int mb_num,mb_big_num,mb_count;
+
+    int i_mb_width,i_mb_height;
+    int bcrop,crop_left,crop_right,crop_top,crop_bottom;
+
+    int nWidth,nHeight;
+    int sps_video_parameter_set_id,sps_max_sub_layers_minus1,sps_temporal_id_nesting_flag,sps_seq_parameter_set_id,
+        chroma_format_idc,separate_colour_plane_flag,pic_width_in_luma_samples,pic_height_in_luma_samples,
+        conformance_window_flag,conf_win_left_offset,conf_win_right_offset,conf_win_top_offset,conf_win_bottom_offset,
+        sps_sub_layer_ordering_info_present_flag,log2_min_luma_coding_block_size_minus3,
+        log2_diff_max_min_luma_coding_block_size,bit_depth_luma_minus8,bit_depth_chroma_minus8,log2_max_pic_order_cnt_lsb_minus4;
+    int log2_ctb_size,ctb_width,ctb_height;
+    int sps_max_dec_pic_buffering_minus1[8],sps_max_num_reorder_pics[8],sps_max_latency_increase_plus1[8];
+    void *pNewBuf = NULL;
+    int nNewSize;
+    nNewSize = decodeNal(pData,Size,&pNewBuf);
+    if (pNewBuf != NULL)
+    {
+        BitstreamInit(bs,pNewBuf,nNewSize);
+    }
+    else
+    {
+        BitstreamInit(bs,pData,Size);
+    }
+    
+  
+    sps_video_parameter_set_id = eg_read_direct(bs,4);
+    sps_max_sub_layers_minus1 = eg_read_direct(bs,3);
+    sps_temporal_id_nesting_flag = eg_read_direct(bs,1);
+    H265_profile_tier_level(bs,1, sps_max_sub_layers_minus1 );
+    sps_seq_parameter_set_id = eg_read_ue(bs);
+    chroma_format_idc = eg_read_ue(bs);
+    if (chroma_format_idc == 3)
+    {
+        separate_colour_plane_flag = eg_read_direct(bs,1);
+    }
+    pic_width_in_luma_samples = eg_read_ue(bs);
+    pic_height_in_luma_samples = eg_read_ue(bs);
+    conformance_window_flag = eg_read_direct(bs,1);
+    if (conformance_window_flag)
+    {
+        conf_win_left_offset = eg_read_ue(bs) * 2;
+        conf_win_right_offset = eg_read_ue(bs) * 2;
+        conf_win_top_offset = eg_read_ue(bs) * 2;
+        conf_win_bottom_offset = eg_read_ue(bs) * 2;
+    }
+    else
+    {
+        conf_win_left_offset = 0;
+        conf_win_right_offset = 0;
+        conf_win_top_offset = 0;
+        conf_win_bottom_offset =0;
+
+    }
+
+    bit_depth_luma_minus8 = eg_read_ue(bs);
+    bit_depth_chroma_minus8 = eg_read_ue(bs);
+    log2_max_pic_order_cnt_lsb_minus4 = eg_read_ue(bs);
+    sps_sub_layer_ordering_info_present_flag = eg_read_direct1(bs);
+    for( i = ( sps_sub_layer_ordering_info_present_flag ? 0 : sps_max_sub_layers_minus1 ); i <= sps_max_sub_layers_minus1; i++ ) 
+    {
+        sps_max_dec_pic_buffering_minus1[ i ]=eg_read_ue(bs);
+        sps_max_num_reorder_pics[ i ] =eg_read_ue(bs);
+        sps_max_latency_increase_plus1[ i ]=eg_read_ue(bs);
+    }
+    log2_min_luma_coding_block_size_minus3 = eg_read_ue(bs) + 3;
+    log2_diff_max_min_luma_coding_block_size = eg_read_direct(bs,3);
+    if (pNewBuf != NULL)
+    {
+        delete []pNewBuf;
+        pNewBuf = NULL;
+    }
+    log2_ctb_size     = log2_min_luma_coding_block_size_minus3 + log2_diff_max_min_luma_coding_block_size;
+    ctb_width         = (pic_width_in_luma_samples  + (1 << log2_ctb_size) - 1) >> log2_ctb_size;
+    ctb_height        = (pic_height_in_luma_samples + (1 << log2_ctb_size) - 1) >> log2_ctb_size;
+    m_slice_address_length = ff_log2_c((ctb_width * ctb_height - 1) << 1);// log2((ctb_width * ctb_height - 1) << 1)
+
+   nWidth = pic_width_in_luma_samples - (conf_win_left_offset + conf_win_right_offset);
+   nHeight = pic_height_in_luma_samples - (conf_win_top_offset + conf_win_bottom_offset) ;
+
+    //printf("%d  %d \n",i_mb_width << 4 ,i_mb_height << 4);
+
+    if (m_pRtpSessionClientFxn != NULL)
+    {
+        if (m_nWidth != nWidth ||
+            m_nHeight != nHeight)
+        {
+            AntsFileHeader fh;
+            memset(&fh,0,sizeof(fh));
+            fh.uiFileStartId = ANTS_FILE_STARTCODE;
+            fh.uiFrameRate = 0;
+            fh.uiStreamType = 3;
+            //printf("%d x %d -> %d x %d\n",m_nWidth,m_nHeight,nWidth,nHeight);
+            m_pRtpSessionClientFxn(m_pRtpSessionClientHandle,ANTS_RTSP_CALLBACKBYPE_STREAM,ANTS_RTSP_CALLBACKBYPE_STREAM_H265,0,AntsPktSysHeader,&fh,sizeof(fh),m_pRtpSessionClientUser);
+        }
+
+    }
+    m_nWidth = nWidth;
+    m_nHeight = nHeight;
+   // m_nProfile_idc = profile_idc;
+   // m_nLevel_idc = level_idc;
+
+
+
+    return 0;
+}
+
+int CH264RtpSession::H265_ReadPPS(void *pData,int Size)
+{
+    int i;//,list;
+    int x,y;
+    Bitstream tmpBs,*bs=&tmpBs;
+    int mb_num,mb_big_num,mb_count;
+
+    int i_mb_width,i_mb_height;
+    int bcrop,crop_left,crop_right,crop_top,crop_bottom;
+
+    int nWidth,nHeight;
+    int pps_pic_parameter_set_id,pps_seq_parameter_set_id,output_flag_present_flag;
+    void *pNewBuf = NULL;
+    int nNewSize;
+    nNewSize = decodeNal(pData,Size,&pNewBuf);
+    if (pNewBuf != NULL)
+    {
+        BitstreamInit(bs,pNewBuf,nNewSize);
+    }
+    else
+    {
+        BitstreamInit(bs,pData,Size);
+    }
+
+
+    pps_pic_parameter_set_id = eg_read_ue(bs);
+    pps_seq_parameter_set_id = eg_read_ue(bs);
+    m_dependent_slice_segments_enabled_flag = eg_read_direct1(bs);
+    output_flag_present_flag = eg_read_direct1(bs);
+    m_num_extra_slice_header_bits = eg_read_direct1(bs);
+
+   
+    if (pNewBuf != NULL)
+    {
+        delete []pNewBuf;
+        pNewBuf = NULL;
+    }
+
+  
+    return 0;
+}
+
+
+int CH264RtpSession::H265_ReadFrameHeader(char *pdata,int Size)
+{
+    unsigned int d32;
+    int m,i,pos,info;
+    int first_mb_in_slice,slice_type;
+    int pic_parameter_set_id,colour_plane_id;
+    int frame_num,field_pic_flag,bottom_field_flag;
+    int IDR_pic_id;
+    Bitstream bs;
+    int first_slice_segment_in_pic_flag,no_output_of_prior_pics_flag,slice_pic_parameter_set_id,dependent_slice_segment_flag = 0;
+    int slice_segment_address;
+    void *pNewBuf = NULL;
+    int nNewSize;
+    int slice_reserved_flag[8];
+    nNewSize = decodeNal(pdata,Size> 20?20:Size,&pNewBuf);
+    if (pNewBuf != NULL)
+    {
+        BitstreamInit(&bs,pNewBuf,nNewSize);
+    }
+    else
+    {
+        BitstreamInit(&bs,pdata,Size);
+    }
+    first_slice_segment_in_pic_flag = eg_read_direct1(&bs);
+    if( m_nCurrNalType >= HEVC_NAL_SLICE_BLA_W_LP && m_nCurrNalType <= HEVC_NAL_SLICE_RSV_IRAP_VCL23 )
+    {
+        no_output_of_prior_pics_flag = eg_read_direct1(&bs);
+    }
+    slice_pic_parameter_set_id = eg_read_ue(&bs);
+    if( !first_slice_segment_in_pic_flag ) 
+    {
+        if( m_dependent_slice_segments_enabled_flag ) // PPS read
+        {
+            dependent_slice_segment_flag = eg_read_direct1(&bs);
+        }
+            slice_segment_address = eg_read_direct(&bs,m_slice_address_length); // slice_address_length -> SPS
+            
+    }
+    if( !dependent_slice_segment_flag ) 
+    {
+        for( i = 0; i < m_num_extra_slice_header_bits; i++ ) // PPS
+        {
+            slice_reserved_flag[i] = eg_read_direct1(&bs);
+        }
+    }
+    slice_type = eg_read_ue(&bs);
+
+   
+    m_nCurrSlicetype = slice_type;
+
+
+
+ //printf("*frame_num = %d IDR_pic_id = %d first_mb_in_slice = %d\n",m_nframe_num,IDR_pic_id,first_mb_in_slice);
+    if (pNewBuf != NULL)
+    {
+        delete []pNewBuf;
+        pNewBuf = NULL;
+    }
+    return 0;
+}
+
+int CH264RtpSession::ReadH264FrameHeader(char *pdata,int Size)
+{
+    unsigned int d32;
+    int m,i,pos,info;
+    int first_mb_in_slice,slice_type;
+    int pic_parameter_set_id,colour_plane_id;
+    int frame_num,field_pic_flag,bottom_field_flag;
+    int IDR_pic_id;
+    Bitstream bs;
+    BitstreamInit(&bs,pdata,Size);
+    first_mb_in_slice = eg_read_ue(&bs);
+    m_nLastfirst_mb_in_slice = m_nfirst_mb_in_slice;
+    m_nfirst_mb_in_slice = first_mb_in_slice;
+    slice_type = eg_read_ue(&bs);
+    if (slice_type >= 5)
+    {
+        slice_type -= 5;
+    }
+
+    m_nCurrSlicetype = slice_type;
+    pic_parameter_set_id = eg_read_ue(&bs);
+    if (m_nresidual_color_transform_flag == 1)
+    {
+        colour_plane_id = eg_read_direct(&bs,2);
+    }
+    m_nframe_num = eg_read_direct(&bs,m_nlog2_max_frame_num);
+    // printf("!!%d!!m_nlog2_max_frame_num = %d\n",m_nframe_num,m_nlog2_max_frame_num);
+
+
+    if (!m_nframe_mbs_only_flag)
+    {
+        field_pic_flag = eg_read_direct1(&bs);
+        if (field_pic_flag)
+        {
+            bottom_field_flag = eg_read_direct1(&bs);
+        }
+    }
+    IDR_pic_id = 0;
+    if (m_nCurrNalType == NAL_IDR_SLICE)
+    {
+        IDR_pic_id = eg_read_ue(&bs);
+    }
+
+    m_nCurrIDR_pic_id = IDR_pic_id;
+
+    //printf("*frame_num = %d IDR_pic_id = %d first_mb_in_slice = %d\n",m_nframe_num,IDR_pic_id,first_mb_in_slice);
+
+    return 0;
+}

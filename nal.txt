@@ -1,0 +1,94 @@
+//NAL
+ typedef struct
+{
+    int32_t nal_ref_idc;
+    int32_t nal_unit_type;
+    int32_t nal_size;
+	uint8_t *nal_buf;
+	int     nal_lenth;
+} NAL;
+
+int read_nal(H264 *h,uint8_t *buf, long *count, long *total)
+{
+	
+	 uint8_t *pbuf=buf,*pnal=h->nal.nal_buf;
+	 int i_count=0;
+	
+ 
+    pbuf=buf+*total-*count;
+if(*((uint32_t*)pbuf)==0x01000000)
+{
+	pbuf+=4;
+	*count-=4;
+	
+	h->nal.nal_ref_idc=*pbuf>>5;
+	h->nal.nal_unit_type=*pbuf&0x1f;
+	h->nal.nal_lenth=0;
+	pbuf++;
+	(*count)--;
+	 if(*count<=0)return 1;
+	while(*((uint32_t*)pbuf)!=0x01000000)
+	{
+ 
+		if(i_count==2&&*pbuf==0x03&&(*(pbuf+1)<=0x03))
+		{
+			i_count=0;
+			(*count)--;
+			pbuf++;
+			if(*count<=0)return 1;
+			continue;
+		}else if(*pbuf==0)
+		{
+			i_count++;
+		}else
+		{
+			i_count=0;
+		}
+     *pnal++=*pbuf++;
+ 
+	 h->nal.nal_lenth++;
+      (*count)--;
+	  if(*count<=0)return 1;
+	  if(h->nal.nal_lenth>=NAL_BUFFER_LEN)
+	  {
+//		  //printf("nal_lenth too small!\n");
+		  return 0;
+	  }
+	}
+	 
+	 return 1;
+}
+	return 0;
+}
+
+int  H264_DecoderOneFrame(H264 *h, int BitCount)
+{
+
+	int i;
+	int ret;
+ 		 long count0=0,total=BitCount;
+	//	uint8_t buf[4096+4];
+		uint8_t *buf;
+	buf=h->InternalDecoderInput;
+	count0=total;
+	while(1){
+	ret=read_nal(h,buf,&count0,&total);
+	if (ret<=0)return FALSE;
+	 
+	ret=decode_nal(h);
+	if (ret==2)
+	{
+		h->InternalDecoderOutputYUV=h->curr->Y-h->edge_size*h->i_ref_width-h->edge_size;
+
+		break;
+	}
+	if(ret==0)
+	{
+		h->InternalDecoderOutputYUV=h->curr->Y-h->edge_size*h->i_ref_width-h->edge_size;
+		return FALSE;
+	}
+	}
+
+	 
+	return TRUE ;
+}
